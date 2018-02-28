@@ -1,8 +1,12 @@
 # zhouAslNetwork
 
 Pre: Simple outlier script: asl_outliers.R
+relMeanRMSMotion, negativeVoxels, normCoverage
 2 SD: 129154 127417 110168 106880 114709 125554 126903
 3SD: 110168 106880 114709 125554 126903
+
+coregCrossCorr, coregJaccard, coregDice, coregCoverage
+2 SD: 125554, 127305, 106880, 127417
 
 ##ASL networks
 
