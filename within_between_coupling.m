@@ -1,35 +1,108 @@
 clear all 
 close all
 
-%% Read in connectivity matrices
-bold_net=dlmread('/data/joy/BBL/projects/zhouCbfNetworks/results/BOLDnetwork/105176/20170510x10571/net/SchaeferPNC_200/105176_20170510x10571_SchaeferPNC_200_network.txt');
+%% Define numbers and subjects
+nsub=30;
+nreg=200;
+nedge=19900;
 
-cbf_net=dlmread('/data/joy/BBL/projects/zhouCbfNetworks/data/105176/20170510x10571/fcon/schaefer200/105176_20170510x10571_schaefer200_network.txt');
-cbf_net = squareform(cbf_net);
+%% Read in BOLD connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/boldNetwork/prelim_data_n30/')
+bold_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/boldNetwork/prelim_data_n30/*network.txt');
+nfiles = length(bold_network_files);
+bold_files = cell(1, nfiles);
+bold_sq = zeros(nsub, nedge);
+
+for k = 1:nfiles
+    bold_net = dlmread(bold_network_files(k).name);
+    bold_net = bold_net - diag(diag(bold_net));
+    bold_sq(k,:) = squareform(bold_net);
+end
+
+%% Read in CBF connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/cbfProc/prelim_data_n30/')
+cbf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/cbfProc/prelim_data_n30/*network.txt');
+nfiles = length(cbf_network_files);
+cbf_files = cell(1, nfiles);
+cbf_sq = zeros(nsub, nedge);
+
+for k = 1:nfiles
+    cbf_net = dlmread(cbf_network_files(k).name);
+    cbf_net = squareform(cbf_net);
+    cbf_net = cbf_net - diag(diag(cbf_net));
+    cbf_sq(k,:) = squareform(cbf_net);
+end
+
+%% Read in FA connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
+fa_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*FA_matrixsc.csv');
+nfiles = length(fa_network_files);
+fa_files = cell(1, nfiles);
+fa_sq = cell(1, nfiles);
+
+for k = 1:nfiles
+    fa_files{k} = csvread(fa_network_files(k).name, 1, 0);
+end
+
+%% Read in ODI connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
+odi_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ODI_matrixsc.csv');
+nfiles = length(odi_network_files);
+odi_files = cell(1, nfiles);
+odi_sq = cell(1, nfiles);
+
+for k = 1:nfiles
+    odi_files{k} = csvread(odi_network_files(k).name, 1, 0);
+end
+
+%% Read in ICVF connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
+icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixsc.csv');
+nfiles = length(icvf_network_files);
+icvf_files = cell(1, nfiles);
+icvf_sq = cell(1, nfiles);
+
+for k = 1:nfiles
+    icvf_files{k} = csvread(icvf_network_files(k).name, 1, 0);
+end
+
+%% For running single subjects
+%bold_net=dlmread('/data/joy/BBL/projects/zhouCbfNetworks/data/boldNetwork/105176/20170510x10571/net/SchaeferPNC_200/105176_20170510x10571_SchaeferPNC_200_network.txt');
+
+%cbf_net=dlmread('/data/joy/BBL/projects/zhouCbfNetworks/data/cbfProc/105176/20170510x10571/fcon/schaefer200/105176_20170510x10571_schaefer200_network.txt');
+%cbf_net = squareform(cbf_net);
+
+%fa_net=csvread('/data/jux/BBL/projects/multishell_diffusion/processedData/Connectivity/93787_20160524x10163_FA_matrixsc.csv', 1, 0)
 
 %% Read in community index (denotes which module each region is assigned to)
 Yeo_part=dlmread('/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaefer200x7CommunityAffiliation.1D');
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Global-level coupling %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% Set diagonal of adjacency matrix to nan
-bold_net = bold_net - diag(diag(bold_net));
-cbf_net = cbf_net - diag(diag(cbf_net));
 
-sq_bold=squareform(bold_net)';
-sq_cbf=squareform(cbf_net)';
+%% Initial correlation
+for k = 1:length(bold_sq);
+    [r p] = corr(bold_sq(k,:), cbf_sq(k,:))
+end
 
-[r p]=corr(sq_bold, sq_cbf)
+%% For running single subjects
+%bold_net = bold_net - diag(diag(bold_net));
+%cbf_net = cbf_net - diag(diag(cbf_net));
+%fa_net = fa_net - diag(diag(fa_net));
+
+%sq_bold=squareform(bold_net)';
+%sq_cbf=squareform(cbf_net)';
+%sq_fa=squareform(fa_net)';
+
+% [r p]=corr(sq_bold, sq_cbf)
+% [r p]=corr(sq_fa, sq_cbf)
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Module-level Coupling %%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% Define regional community index (ci)
 ci=Yeo_part;
-
-%% Define number of communities and subjects
 numComm=length(unique(ci));
-nsub=1;
 
 %% Allocate empty matrices
 corr_boldCbf_within_mat = zeros(nsub,numComm);
@@ -42,8 +115,8 @@ for s=1:nsub
 	comm_comm_mat=zeros(numComm,numComm);
 	
 	% Define connectivity matrices
-	A_bold=bold_net;
-	A_cbf=cbf_net;
+	A_bold=squareform(bold_sq(s,:));
+	A_cbf=squareform(cbf_sq(s,:));
 
 	%% Define Modules and Nodes in network
 	unique_S=unique(ci);
@@ -78,8 +151,8 @@ for s=1:nsub
 			if i==j
 				% current_edges_bold([nan_idx])=0; % Set NaNs along diagonal to 0
 				current_edges_cbf=triu(current_edges_cbf,1)';
-			end
-
+            end
+            
 			current_edges_cbf=current_edges_cbf(current_edges_bold~=0);
 			current_edges_bold=current_edges_bold(current_edges_bold~=0);
 			
