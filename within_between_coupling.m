@@ -2,7 +2,7 @@ clear all
 close all
 
 %% Define numbers and subjects
-nsub=30;
+nsub=26;
 nreg=200;
 nedge=19900;
 
@@ -35,7 +35,7 @@ end
 
 %% Read in FA connectivity matrices
 cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-fa_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*FA_matrixsc.csv');
+fa_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*FA_matrixts.csv');
 nfiles = length(fa_network_files);
 fa_files = cell(1, nfiles);
 fa_sq = zeros(nsub, nedge);
@@ -48,7 +48,7 @@ end
 
 %% Read in ODI connectivity matrices
 cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-odi_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ODI_matrixsc.csv');
+odi_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ODI_matrixts.csv');
 nfiles = length(odi_network_files);
 odi_files = cell(1, nfiles);
 odi_sq = zeros(nsub, nedge);
@@ -61,7 +61,7 @@ end
 
 %% Read in ICVF connectivity matrices
 cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixsc.csv');
+icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixts.csv');
 nfiles = length(icvf_network_files);
 icvf_files = cell(1, nfiles);
 icvf_sq = zeros(nsub,nedge);
@@ -110,9 +110,9 @@ Yeo_part=dlmread('/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaef
 ci=Yeo_part;
 numComm=length(unique(ci));
 
-%%%%%%%%%%%%%%%
-%% BOLD vs CBF%
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
+%% BOLD vs CBF %
+%%%%%%%%%%%%%%%%
 
 %% Allocate empty matrices
 corr_boldCbf_within_mat = zeros(nsub,numComm);
@@ -201,7 +201,7 @@ corr_faCbf_within_mat = zeros(nsub,numComm);
 faCbf_commComm_mat= zeros(nsub, numComm, numComm);
 
 %% Loop through subjects
-for s=1:nsub
+for s=2:nsub
 
 	% Allocate empty community by community matrix to fill in
 	comm_comm_mat=zeros(numComm,numComm);
@@ -268,16 +268,16 @@ for s=1:nsub
 	faCbf_commComm_mat(s,:,:)=comm_comm_mat;
 end
 
-figure; imagesc(squeeze(faCbf_commComm_mat(1,:,:)))
+figure; imagesc(squeeze(faCbf_commComm_mat(2,:,:)))
 
 %% Write matrices in results directory
 cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('faCbf_commComm.txt',faCbf_commComm_mat, ' ')
-dlmwrite('faCbf_within.txt',corr_faCbf_within_mat, ' ')
+dlmwrite('faCbf_commComm_ts.txt',faCbf_commComm_mat, ' ')
+dlmwrite('faCbf_within_ts.txt',corr_faCbf_within_mat, ' ')
 
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
 %% CBF vs ODI %%
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%
 
 corr_odiCbf_within_mat = zeros(nsub,numComm);
 odiCbf_commComm_mat= zeros(nsub, numComm, numComm);
@@ -356,12 +356,12 @@ figure; imagesc(squeeze(odiCbf_commComm_mat(2,:,:)))
 
 %% Write matrices in results directory
 cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('odiCbf_commComm.txt',odiCbf_commComm_mat, ' ')
-dlmwrite('odiCbf_within.txt',corr_odiCbf_within_mat, ' ')
+dlmwrite('odiCbf_commComm_ts.txt',odiCbf_commComm_mat, ' ')
+dlmwrite('odiCbf_within_ts.txt',corr_odiCbf_within_mat, ' ')
 
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
 %% CBF vs ICVF %%
-%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%
 
 corr_icvfCbf_within_mat = zeros(nsub,numComm);
 icvfCbf_commComm_mat= zeros(nsub, numComm, numComm);
@@ -440,5 +440,5 @@ figure; imagesc(squeeze(icvfCbf_commComm_mat(2,:,:)))
 
 %% Write matrices in results directory
 cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('icvfCbf_commComm.txt',icvfCbf_commComm_mat, ' ')
-dlmwrite('icvfCbf_within.txt',corr_icvfCbf_within_mat, ' ')
+dlmwrite('icvfCbf_commComm_ts.txt',icvfCbf_commComm_mat, ' ')
+dlmwrite('icvfCbf_within_ts.txt',corr_icvfCbf_within_mat, ' ')
