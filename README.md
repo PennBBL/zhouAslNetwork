@@ -8,7 +8,7 @@ relMeanRMSMotion, negativeVoxels, normCoverage
 coregCrossCorr, coregJaccard, coregDice, coregCoverage
 2 SD: 125554, 127305, 106880, 127417
 
-##ASL networks
+## ASL networks
 
 1. Export xcp and R library paths
 ```
@@ -37,4 +37,55 @@ _wbNetWB.csv is within-between correlations
 Rscript /home/rciric/xcpAccelerator/xcpEngine/utils/withinBetween.R -m /data/jux/BBL/projects/ASLnetwork/average_power264_network.txt -c /home/rciric/xcpAccelerator/xcpEngine/atlas/power264/power264CommunityAffiliation.1D -o /data/jux/BBL/projects/ASLnetwork/
 ```
 
-##Inspecting ASL, BOLD, FA, ODI, and ICVF
+## rs-BOLD networks (documentation in progress)
+
+1. Run design (uses an older version of xcp and R)
+```
+export XCPEDIR=/data/jux/BBL/applications-from-joy/xcpEngine
+export RPATH=/share/apps/R/R-3.1.1/bin/R
+${XCPEDIR}/xcpEngine -d /data/joy/BBL/projects/zhouCbfNetworks/zhouCbfNetworksScripts/n101_restbold_20180117_prelim.dsn -m c
+```
+
+## Inspecting ASL, BOLD, FA, ODI, and ICVF (documentation in progress)
+
+1. Generate lists of all subjects data in each modality and keep only subject ID (Bash commands not shown in code below)
+
+BOLD
+```
+cd /data/joy/BBL/projects/zhouCbfNetworks/data/boldNetwork
+ls */*/net/SchaeferPNC_200/*network.txt > procBold.txt
+```
+
+CBF
+```
+cd /data/joy/BBL/projects/zhouCbfNetworks/data/boldNetwork/cbfProc
+ls */*/fcon/schaefer200/*network.txt > procCbf.txt
+```
+
+NODDI
+```
+cd /data/jux/BBL/projects/multishell_diffusion/processedData/multishellPipelineFall2017
+ls */*/tractography/*_matrixts.csv > procNoddi.txt
+```
+
+2. Find common subjects among modalities (ceiling will be will be number of NODDI subjects). Relevant scripts:
+```
+cd /data/joy/BBL/projects/zhouCbfNetworks/zhouCbfNetworksScripts/findCommonSubjects.sh
+```
+
+3. Use selectSubjects.sh to write the subjects to include in analysis
+```
+/data/joy/BBL/projects/zhouCbfNetworks/zhouCbfNetworksScripts/selectSubjects.sh
+```
+
+## Run within- and between- modules analysis across edges (documentation in progress)
+
+1. Run within_between_coupling.m Matlab script
+```
+cd /data/joy/BBL/projects/zhouCbfNetworks/zhouCbfNetworksScripts/within_between_coupling.m
+```
+
+2. Visualize within-module coupling as violin plots via violin_plot.R
+```
+/data/joy/BBL/projects/zhouCbfNetworks/zhouCbfNetworksScripts/violin_plot.R
+```
