@@ -17,17 +17,17 @@ nedge=19900;
 %     cbf_sq(k,:) = squareform(cbf_net);
 % end
 % 
-% %% Read in FA connectivity matrices
+% %% Read in ODI connectivity matrices
 % cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-% fa_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*FA_matrixts.csv');
-% nfiles = length(fa_network_files);
-% fa_files = cell(1, nfiles);
-% fa_sq = zeros(nsub, nedge);
+% odi_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ODI_matrixts.csv');
+% nfiles = length(odi_network_files);
+% odi_files = cell(1, nfiles);
+% odi_sq = zeros(nsub, nedge);
 % 
 % for k = 1:nfiles
-%     fa_net = csvread(fa_network_files(k).name, 1, 0);
-%     fa_net = fa_net - diag(diag(fa_net));
-%     fa_sq(k,:) = squareform(fa_net);
+%     odi_net = csvread(odi_network_files(k).name, 1, 0);
+%     odi_net = odi_net - diag(diag(odi_net));
+%     odi_sq(k,:) = squareform(odi_net);
 % end
 
 %% Read in community index (denotes which module each region is assigned to)
@@ -41,11 +41,11 @@ ci=Yeo_part;
 numComm=length(unique(ci));
 
 %%%%%%%%%%%%%%%
-%% CBF vs FA %%
+%% CBF vs odi %%
 %%%%%%%%%%%%%%%
 
-corr_faCbf_within_mat = zeros(nsub,numComm);
-faCbf_commComm_mat= zeros(nsub, numComm, numComm);
+corr_odiCbf_within_mat = zeros(nsub,numComm);
+odiCbf_commComm_mat= zeros(nsub, numComm, numComm);
 
 %% Loop through subjects
 for s=2:nsub
@@ -54,18 +54,18 @@ for s=2:nsub
 	comm_comm_mat=zeros(numComm,numComm);
 	
 	% Define connectivity matrices
-	A_fa=squareform(fa_sq(s,:));
+	A_odi=squareform(odi_sq(s,:));
 	A_cbf=squareform(cbf_sq(s,:));
 
 	%% Define Modules and Nodes in network
 	unique_S=unique(ci);
-	numNodes=length(A_fa);
+	numNodes=length(A_odi);
 
 	%% Number of communities 
 	numComm=length(unique_S);
 
 	%% Set diagonal of adjacency matrix to nan
-	A_fa = A_fa - diag(diag(A_fa));
+	A_odi = A_odi - diag(diag(A_odi));
 	A_cbf = A_cbf - diag(diag(A_cbf));
 
 	%% Iterate through each module to calculate correlation of edge weights (within and between)
@@ -82,23 +82,23 @@ for s=2:nsub
 			comidx_2= find(ci==j);
 			% Pair-wise Between-module coupling
 
-            current_nodes_fa=sum(A_fa(comidx,:));
-            current_nodes_fa=current_nodes_fa';
+            current_nodes_odi=sum(A_odi(comidx,:));
+            current_nodes_odi=current_nodes_odi';
 		
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-            current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
-            current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
+            current_nodes_cbf=current_nodes_cbf(current_nodes_odi~=0);
+            current_nodes_odi=current_nodes_odi(current_nodes_odi~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
-            comm_comm_mat(com1,1)=corr(current_nodes_fa, current_nodes_cbf, 'type', 'Spearman');
+            comm_comm_mat(com1,1)=corr(current_nodes_odi, current_nodes_cbf, 'type', 'Spearman');
 			com2= com2 + 1;
 		end
         
 		%% Within module connectivity
-       % current_nodes_fa_within = squareform(A_fa(comidx,comidx));
-%		within_thresh_idx=find(current_edges_fa_within==0); % Define index for removing disconnect edges
+       % current_nodes_odi_within = squareform(A_odi(comidx,comidx));
+%		within_thresh_idx=find(current_edges_odi_within==0); % Define index for removing disconnect edges
 		
 %         current_edges_bold_within([within_thresh_idx])=[]; % Remove disconnected edges
 
@@ -107,16 +107,17 @@ for s=2:nsub
 %         current_edges_cbf_within([within_thresh_idx])=[]; % Remove disconnected edges
 
 		% Correlation between nodes within/between modules
-		%corr_faCbf_within_mat (s,com1) = corr(current_nodes_fa_within', current_nodes_cbf_within', 'type', 'Spearman');
+		%corr_odiCbf_within_mat (s,com1) = corr(current_nodes_odi_within', current_nodes_cbf_within', 'type', 'Spearman');
 		com1 = com1 + 1;
 	end
-	faCbf_commComm_mat(s,:,:)=comm_comm_mat;
+	odiCbf_commComm_mat(s,:,:)=comm_comm_mat;
 end
 
-figure; imagesc(squeeze(faCbf_commComm_mat(2,:,:)));
+figure; imagesc(squeeze(odiCbf_commComm_mat(2,:,:)));
+
 
 
 %% Write matrices in results directory
 cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('faCbf_commComm_nodeStrength.txt',faCbf_commComm_mat, ' ')
-%dlmwrite('faCbf_within_nodeStrength.txt',corr_faCbf_within_mat, ' ')
+dlmwrite('odiCbf_commComm_nodeStrength.txt',odiCbf_commComm_mat, ' ')
+%dlmwrite('odiCbf_within_nodeStrength.txt',corr_odiCbf_within_mat, ' ')

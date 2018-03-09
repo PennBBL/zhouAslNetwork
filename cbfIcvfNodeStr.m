@@ -17,18 +17,18 @@ nedge=19900;
 %     cbf_sq(k,:) = squareform(cbf_net);
 % end
 % 
-% %% Read in FA connectivity matrices
-% cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-% fa_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*FA_matrixts.csv');
-% nfiles = length(fa_network_files);
-% fa_files = cell(1, nfiles);
-% fa_sq = zeros(nsub, nedge);
-% 
-% for k = 1:nfiles
-%     fa_net = csvread(fa_network_files(k).name, 1, 0);
-%     fa_net = fa_net - diag(diag(fa_net));
-%     fa_sq(k,:) = squareform(fa_net);
-% end
+%% Read in ICVF connectivity matrices
+cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
+icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixts.csv');
+nfiles = length(icvf_network_files);
+icvf_files = cell(1, nfiles);
+icvf_sq = zeros(nsub,nedge);
+
+for k = 1:nfiles
+    icvf_net = csvread(icvf_network_files(k).name, 1, 0);
+    icvf_net = icvf_net - diag(diag(icvf_net));
+    icvf_sq(k,:) = squareform(icvf_net);
+end
 
 %% Read in community index (denotes which module each region is assigned to)
 Yeo_part=dlmread('/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaefer200x7CommunityAffiliation.1D');
@@ -41,11 +41,11 @@ ci=Yeo_part;
 numComm=length(unique(ci));
 
 %%%%%%%%%%%%%%%
-%% CBF vs FA %%
+%% CBF vs icvf %%
 %%%%%%%%%%%%%%%
 
-corr_faCbf_within_mat = zeros(nsub,numComm);
-faCbf_commComm_mat= zeros(nsub, numComm, numComm);
+corr_icvfCbf_within_mat = zeros(nsub,numComm);
+icvfCbf_commComm_mat= zeros(nsub, numComm, numComm);
 
 %% Loop through subjects
 for s=2:nsub
@@ -54,18 +54,18 @@ for s=2:nsub
 	comm_comm_mat=zeros(numComm,numComm);
 	
 	% Define connectivity matrices
-	A_fa=squareform(fa_sq(s,:));
+	A_icvf=squareform(icvf_sq(s,:));
 	A_cbf=squareform(cbf_sq(s,:));
 
 	%% Define Modules and Nodes in network
 	unique_S=unique(ci);
-	numNodes=length(A_fa);
+	numNodes=length(A_icvf);
 
 	%% Number of communities 
 	numComm=length(unique_S);
 
 	%% Set diagonal of adjacency matrix to nan
-	A_fa = A_fa - diag(diag(A_fa));
+	A_icvf = A_icvf - diag(diag(A_icvf));
 	A_cbf = A_cbf - diag(diag(A_cbf));
 
 	%% Iterate through each module to calculate correlation of edge weights (within and between)
@@ -82,41 +82,42 @@ for s=2:nsub
 			comidx_2= find(ci==j);
 			% Pair-wise Between-module coupling
 
-            current_nodes_fa=sum(A_fa(comidx,:));
-            current_nodes_fa=current_nodes_fa';
+            current_nodes_icvf=sum(A_icvf(comidx,:));
+            current_nodes_icvf=current_nodes_icvf';
 		
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-            current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
-            current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
+            current_nodes_cbf=current_nodes_cbf(current_nodes_icvf~=0);
+            current_nodes_icvf=current_nodes_icvf(current_nodes_icvf~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
-            comm_comm_mat(com1,1)=corr(current_nodes_fa, current_nodes_cbf, 'type', 'Spearman');
+            comm_comm_mat(com1,1)=corr(current_nodes_icvf, current_nodes_cbf, 'type', 'Spearman');
 			com2= com2 + 1;
 		end
         
 		%% Within module connectivity
-       % current_nodes_fa_within = squareform(A_fa(comidx,comidx));
-%		within_thresh_idx=find(current_edges_fa_within==0); % Define index for removing disconnect edges
+        %current_nodes_icvf_within = squareform(A_icvf(comidx,comidx));
+%		within_thresh_idx=find(current_edges_icvf_within==0); % Define index for removing disconnect edges
 		
 %         current_edges_bold_within([within_thresh_idx])=[]; % Remove disconnected edges
 
-       % current_nodes_cbf_within = squareform(A_cbf(comidx,comidx));
+        %current_nodes_cbf_within = squareform(A_cbf(comidx,comidx));
 		
 %         current_edges_cbf_within([within_thresh_idx])=[]; % Remove disconnected edges
 
 		% Correlation between nodes within/between modules
-		%corr_faCbf_within_mat (s,com1) = corr(current_nodes_fa_within', current_nodes_cbf_within', 'type', 'Spearman');
+		%corr_icvfCbf_within_mat (s,com1) = corr(current_nodes_icvf_within', current_nodes_cbf_within', 'type', 'Spearman');
 		com1 = com1 + 1;
 	end
-	faCbf_commComm_mat(s,:,:)=comm_comm_mat;
+	icvfCbf_commComm_mat(s,:,:)=comm_comm_mat;
 end
 
-figure; imagesc(squeeze(faCbf_commComm_mat(2,:,:)));
+figure; imagesc(squeeze(icvfCbf_commComm_mat(2,:,:)));
+
 
 
 %% Write matrices in results directory
 cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('faCbf_commComm_nodeStrength.txt',faCbf_commComm_mat, ' ')
-%dlmwrite('faCbf_within_nodeStrength.txt',corr_faCbf_within_mat, ' ')
+dlmwrite('icvfCbf_commComm_nodeStrength.txt',icvfCbf_commComm_mat, ' ')
+%dlmwrite('icvfCbf_within_nodeStrength.txt',corr_icvfCbf_within_mat, ' ')
