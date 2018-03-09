@@ -18,17 +18,17 @@ nedge=19900;
 % end
 % 
 %% Read in ICVF connectivity matrices
-cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
-icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixts.csv');
-nfiles = length(icvf_network_files);
-icvf_files = cell(1, nfiles);
-icvf_sq = zeros(nsub,nedge);
-
-for k = 1:nfiles
-    icvf_net = csvread(icvf_network_files(k).name, 1, 0);
-    icvf_net = icvf_net - diag(diag(icvf_net));
-    icvf_sq(k,:) = squareform(icvf_net);
-end
+% cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
+% icvf_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ICVF_matrixts.csv');
+% nfiles = length(icvf_network_files);
+% icvf_files = cell(1, nfiles);
+% icvf_sq = zeros(nsub,nedge);
+% 
+% for k = 1:nfiles
+%     icvf_net = csvread(icvf_network_files(k).name, 1, 0);
+%     icvf_net = icvf_net - diag(diag(icvf_net));
+%     icvf_sq(k,:) = squareform(icvf_net);
+% end
 
 %% Read in community index (denotes which module each region is assigned to)
 Yeo_part=dlmread('/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaefer200x7CommunityAffiliation.1D');
@@ -78,9 +78,6 @@ for s=2:nsub
 		comidx = find(ci==i);
 		not_comidx = find(ci~=i);
 	
-		for j = unique_S'
-			comidx_2= find(ci==j);
-			% Pair-wise Between-module coupling
 
             current_nodes_icvf=sum(A_icvf(comidx,:));
             current_nodes_icvf=current_nodes_icvf';
@@ -88,13 +85,12 @@ for s=2:nsub
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-            current_nodes_cbf=current_nodes_cbf(current_nodes_icvf~=0);
-            current_nodes_icvf=current_nodes_icvf(current_nodes_icvf~=0);
+%             current_nodes_cbf=current_nodes_cbf(current_nodes_icvf~=0);
+%             current_nodes_icvf=current_nodes_icvf(current_nodes_icvf~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
             comm_comm_mat(com1,1)=corr(current_nodes_icvf, current_nodes_cbf, 'type', 'Spearman');
 			com2= com2 + 1;
-		end
         
 		%% Within module connectivity
         %current_nodes_icvf_within = squareform(A_icvf(comidx,comidx));

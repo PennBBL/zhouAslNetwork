@@ -17,7 +17,7 @@ nedge=19900;
 %     cbf_sq(k,:) = squareform(cbf_net);
 % end
 % 
-% %% Read in ODI connectivity matrices
+%% Read in ODI connectivity matrices
 % cd('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/')
 % odi_network_files = dir('/data/joy/BBL/projects/zhouCbfNetworks/data/noddiProc/prelim_data_n30/*ODI_matrixts.csv');
 % nfiles = length(odi_network_files);
@@ -78,8 +78,6 @@ for s=2:nsub
 		comidx = find(ci==i);
 		not_comidx = find(ci~=i);
 	
-		for j = unique_S'
-			comidx_2= find(ci==j);
 			% Pair-wise Between-module coupling
 
             current_nodes_odi=sum(A_odi(comidx,:));
@@ -88,14 +86,13 @@ for s=2:nsub
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-            current_nodes_cbf=current_nodes_cbf(current_nodes_odi~=0);
-            current_nodes_odi=current_nodes_odi(current_nodes_odi~=0);
+%            current_nodes_cbf=current_nodes_cbf(current_nodes_odi~=0);
+%            current_nodes_odi=current_nodes_odi(current_nodes_odi~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
             comm_comm_mat(com1,1)=corr(current_nodes_odi, current_nodes_cbf, 'type', 'Spearman');
 			com2= com2 + 1;
-		end
-        
+
 		%% Within module connectivity
        % current_nodes_odi_within = squareform(A_odi(comidx,comidx));
 %		within_thresh_idx=find(current_edges_odi_within==0); % Define index for removing disconnect edges

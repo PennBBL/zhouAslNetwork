@@ -78,8 +78,6 @@ for s=2:nsub
 		comidx = find(ci==i);
 		not_comidx = find(ci~=i);
 	
-		for j = unique_S'
-			comidx_2= find(ci==j);
 			% Pair-wise Between-module coupling
 
             current_nodes_fa=sum(A_fa(comidx,:));
@@ -88,13 +86,12 @@ for s=2:nsub
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-            current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
-            current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
+%            current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
+%            current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
             comm_comm_mat(com1,1)=corr(current_nodes_fa, current_nodes_cbf, 'type', 'Spearman');
 			com2= com2 + 1;
-		end
         
 		%% Within module connectivity
        % current_nodes_fa_within = squareform(A_fa(comidx,comidx));
