@@ -48,7 +48,7 @@ corr_faCbf_within_mat = zeros(nsub,numComm);
 faCbf_commComm_mat= zeros(nsub, numComm, numComm);
 
 %% Loop through subjects
-for s=2:nsub
+for s=4:4
 
 	% Allocate empty community by community matrix to fill in
 	comm_comm_mat=zeros(numComm,numComm);
@@ -86,8 +86,8 @@ for s=2:nsub
             current_nodes_cbf=sum(A_cbf(comidx,:));
             current_nodes_cbf=current_nodes_cbf';
             
-%            current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
-%            current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
+           current_nodes_cbf=current_nodes_cbf(current_nodes_fa~=0);
+           current_nodes_fa=current_nodes_fa(current_nodes_fa~=0);
 			
 			% Define a community X community matrix where elements represent within/between coupling
             comm_comm_mat(com1,1)=corr(current_nodes_fa, current_nodes_cbf, 'type', 'Spearman');
@@ -114,6 +114,6 @@ figure; imagesc(squeeze(faCbf_commComm_mat(2,:,:)));
 
 
 %% Write matrices in results directory
-cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
-dlmwrite('faCbf_commComm_nodeStrength.txt',faCbf_commComm_mat, ' ')
-%dlmwrite('faCbf_within_nodeStrength.txt',corr_faCbf_within_mat, ' ')
+% cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
+% dlmwrite('faCbf_commComm_nodeStrength.txt',faCbf_commComm_mat, ' ')
+% %dlmwrite('faCbf_within_nodeStrength.txt',corr_faCbf_within_mat, ' ')

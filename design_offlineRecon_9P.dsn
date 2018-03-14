@@ -33,7 +33,7 @@
 ###################################################################
 
 analysis=accelerator_$(whoami)
-design=/data/jux/BBL/projects/ASLnetwork/design_offlineRecon_9P.dsn
+design=/home/zdhou/ASLnetwork/zhouCbfNetworksScripts/design_offlineRecon_9P.dsn
 sequence=pcasl
 standard=PNC%2x2x2
 
@@ -155,6 +155,7 @@ regress_process[5]=TMP-REG
 ###################################################################
 
 roiquant_atlas[6]=/data/jux/BBL/studies/grmpy/processedData/asl/group/atlas.json #${XCPEDIR}/space/PNC/PNC_atlas.json
+roiquant_globals[6]=1
 roiquant_vol[6]=1
 roiquant_rerun[6]=0
 roiquant_cleanup[6]=1
