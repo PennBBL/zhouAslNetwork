@@ -1,6 +1,6 @@
 ##############################################################################################
-###   This script will construct a subject cohort for CBF-DTI analyses, retaining   	   ###
-## 			subjects who passed quality assurance protocols for T1, DTI, and PCASL      	##
+###   This script will construct a subject cohort for CBF-DTI analyses, retaining   	     ###
+## 			subjects who passed quality assurance protocols for T1, DTI, and PCASL      	      ##
 ##############################################################################################
 # T1
 t1_qa <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/neuroimaging/t1struct/n1601_t1QaData_20170306.csv")
@@ -18,6 +18,7 @@ health <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/health/n1601_heal
 demo <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/demographics/n1601_demographics_go1_20161212.csv")
 # Cognitive Scores
 cognitive <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/cnb/n1601_cnb_factorscores.csv")
+
 # Subject identifier
 tracker <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/demographics/n1601_tracker_go1_20161212.csv")
 tracker <- tracker[c("bblid","scanid")]
@@ -63,12 +64,13 @@ QA_df <- QA_df[which(QA_df$t1Exclude==0), ]
 ###########################
 
 pcasl_df <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/neuroimaging/asl/n1601_glasserPcaslValues_20161014.csv")
+
 cost_df_proc <- merge(QA_df,pcasl_df,by=c("bblid","scanid"))
 vars <- ls(cost_df_proc)
 vars <- vars[215:574]
-
 cost_df <- cbind(cost_df_proc[vars])
-row.names(cost_df) <- cost_df_proc[,2]
+scanid <- cost_df_proc$scanid
+cost_df <- cbind(scanid, cost_df)
 
 # Count number of NAs-- 118 total, see na_count for table of NAs regionally
 na_count <-sapply(cost_df, function(y) sum(length(which(is.na(y)))))
@@ -78,14 +80,50 @@ na_count <- data.frame(na_count)
 na_index <- which(is.na(cost_df), arr.ind=TRUE)
 na_index <- na_index[,1]
 
-##################################
-## Module and regional analysis ##
-##################################
+#Modularity metrics
+modularity <- read.csv("/data/joy/BBL/projects/zhouCbfNetworks/results/modularity.txt",header=F,sep=" ")
+mod_df_colnames <- c("scanid","Q",sprintf("%01d", seq(1,360)))
+colnames(modularity) <- mod_df_colnames
+mod_df <- merge(QA_df,modularity,by=c("scanid"))[names(modularity)]
+cost_df<-merge(cost_df,mod_df,by=c("scanid"))[names(cost_df)]
+QA_df <- merge(QA_df,cost_df,by=c("scanid"))
+
+###########################################
+## Global, module, and regional analysis ##
+###########################################
+library(ppcor)
+library(mgcv)
+library(visreg)
 
 # Load in Glasser index
 glasser_index <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeIndex.1D')
+glasser_names <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeNames.txt')
 
 # Calculate subject global mean CBF, removing NAs
-globalCBF <- rowSums(cost_df, na.rm=T)
+globalCBF <- cbind(cost_df$scanid, rowSums(cost_df, na.rm=T))
+colnames(globalCBF) <- c("scanid","globalCBF")
+cor.test(globalCBF[,2],mod_df$Q,method = "spearman",na.rm=T)
+
+merge(globalCBF, mod_df, by=c("scanid"))[colnames(globalCBF)]
+covs <- cbind(QA_df$ageAtScan1,QA_df$sex, QA_df$dti64MeanRelRMS, QA_df$pcaslRelMeanRMSMotion)
+covs <- na.omit(covs)
+pcor.test(na.omit(globalCBF), na.omit(mod_df$Q),covs)
+
+QA_df<- merge(mod_df,QA_df,by=c("scanid"))
+QA_df<- merge(globalCBF,QA_df,by=c("scanid"))
+modularityByAge<- gam(Q ~ s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
+visreg(modularityByAge,"ageAtScan1", xlab="Age (months)", ylab="Modularity")
+
+cbfByAge<- gam(globalCBF ~ s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
+visreg(cbfByAge,"ageAtScan1", xlab="Age (months)", ylab="Global CBF")
+
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+
+globalModularityCbf_noAge<- gam(globalCBF ~ Q + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+
+## To do: control for GM density for CBF? Subset by euclidian distance bins?
+## Perfusion-weighted structural networks?
 
 # Calculate regional mean CBF
