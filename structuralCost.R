@@ -59,10 +59,24 @@ QA_df <- QA_df[which(QA_df$pcaslCoverageExclude==0), ]
 # T1 Exclusion
 QA_df <- QA_df[which(QA_df$t1Exclude==0), ]
 
-###########################
-## Merge final selection ##
-###########################
+###########################################
+## Global, module, and regional analysis ##
+###########################################
+library(ppcor)
+library(mgcv)
+library(visreg)
 
+
+## To do: control for GM density for CBF? Subset by euclidian distance bins?
+## Perfusion-weighted structural networks?
+
+# Calculate regional mean CBF
+
+#########
+#Glasser#
+#########
+
+# Merge final selection 
 pcasl_df <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/neuroimaging/asl/n1601_glasserPcaslValues_20161014.csv")
 
 cost_df_proc <- merge(QA_df,pcasl_df,by=c("bblid","scanid"))
@@ -87,13 +101,6 @@ colnames(modularity) <- mod_df_colnames
 mod_df <- merge(QA_df,modularity,by=c("scanid"))[names(modularity)]
 cost_df<-merge(cost_df,mod_df,by=c("scanid"))[names(cost_df)]
 QA_df <- merge(QA_df,cost_df,by=c("scanid"))
-
-###########################################
-## Global, module, and regional analysis ##
-###########################################
-library(ppcor)
-library(mgcv)
-library(visreg)
 
 # Load in Glasser index
 glasser_index <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeIndex.1D')
@@ -123,7 +130,34 @@ visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
 globalModularityCbf_noAge<- gam(globalCBF ~ Q + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
 visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
 
-## To do: control for GM density for CBF? Subset by euclidian distance bins?
-## Perfusion-weighted structural networks?
+##########
+#Schaefer#
+##########
 
-# Calculate regional mean CBF
+# Work in progress
+
+# Merge final selection 
+pcasl_df <- read.csv("/data/joy/BBL/studies/pnc/n1601_dataFreeze/neuroimaging/asl/n1601_glasserPcaslValues_20161014.csv")
+
+cost_df_proc <- merge(QA_df,pcasl_df,by=c("bblid","scanid"))
+vars <- ls(cost_df_proc)
+vars <- vars[215:574]
+cost_df <- cbind(cost_df_proc[vars])
+scanid <- cost_df_proc$scanid
+cost_df <- cbind(scanid, cost_df)
+
+# Count number of NAs-- 118 total, see na_count for table of NAs regionally
+na_count <-sapply(cost_df, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+
+# Subject scan IDs with NAs
+na_index <- which(is.na(cost_df), arr.ind=TRUE)
+na_index <- na_index[,1]
+
+#Modularity metrics
+modularity <- read.csv("/data/joy/BBL/projects/zhouCbfNetworks/results/modularitySchaefer.txt",header=F,sep=" ")
+mod_df_colnames <- c("scanid","Q")
+colnames(modularity) <- mod_df_colnames
+mod_df <- merge(QA_df,modularity,by=c("scanid"))[names(modularity)]
+cost_df<-merge(cost_df,mod_df,by=c("scanid"))[names(cost_df)]
+QA_df <- merge(QA_df,cost_df,by=c("scanid"))
