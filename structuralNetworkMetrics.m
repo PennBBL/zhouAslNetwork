@@ -51,7 +51,7 @@ dlmwrite('modularity.txt',q_mat, ' ')
 %%%%%%%%%%%%%%
 
 %% Define numbers and subjects
-nsub=1689;
+nsub=nfiles;
 nreg=200;
 nedge=19900;
 
@@ -61,7 +61,7 @@ fa_network_files = dir('*.mat');
 nfiles = length(fa_network_files);
 fa_sq = zeros(nsub, nedge);
 
-for k = 1:10 %nfiles
+for k = 1:nfiles
     fa_net = load(fa_network_files(k).name);
     fa_net = fa_net.connectivity;
     fa_net = fa_net - diag(diag(fa_net));
@@ -71,12 +71,29 @@ end
 
 %% Apply community detection across subjects
 
-compath = '/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaefer200x7CommunityAffiliation.1D';
-outpath = '/data/joy/BBL/projects/zhouCbfNetworks/results/';
+Yeo_part=dlmread('/home/rciric/xcpAccelerator/xcpEngine/atlas/schaefer200/schaefer200x7CommunityAffiliation.1D');
+q_mat = zeros(nsub,2);
 
-for s=1:10
-    A_fa=squareform(fa_sq(s,:));
-    A = A_fa - diag(diag(A_fa));
-    quality(A, compath, outpath)
+S=Yeo_part;
+gamma=1;
+
+for i = 1:nsub
+	A=squareform(fa_sq(i,:));
+	N = size(A,1);
+	twomu = 0;
+	for s=1
+    	k=sum(A(:,:,s));
+    	twom=sum(k);
+    	twomu=twomu+twom;
+    	indx=[1:N]+(s-1)*N;
+    	B(indx,indx)=A(:,:,s)-gamma*k'*k/twom;
+	end
+	q_mat(i,2) = sum(B(bsxfun(@eq,S,S.'))) ./ twomu;
+    
+    subj_name = fa_network_files(i).name;
+    q_mat(i,1) = str2num(strtok(subj_name, '_'));
 end
 
+%% Write matrices in results directory
+cd('/data/joy/BBL/projects/zhouCbfNetworks/results/')
+dlmwrite('modularitySchaefer.txt',q_mat, ' ')
