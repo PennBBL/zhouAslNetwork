@@ -65,7 +65,8 @@ QA_df <- QA_df[which(QA_df$t1Exclude==0), ]
 library(ppcor)
 library(mgcv)
 library(visreg)
-
+library(akima)
+library(scatterplot3d)
 
 ## To do: control for GM density for CBF? Subset by euclidian distance bins?
 ## Perfusion-weighted structural networks?
@@ -107,7 +108,8 @@ glasser_index <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser36
 glasser_names <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeNames.txt')
 
 # Calculate subject global mean CBF, removing NAs
-globalCBF <- cbind(cost_df$scanid, rowSums(cost_df, na.rm=T))
+globalCBF <- cbind(cost_df$scanid, rowMeans(cost_df, na.rm=T))
+
 colnames(globalCBF) <- c("scanid","globalCBF")
 cor.test(globalCBF[,2],mod_df$Q,method = "spearman",na.rm=T)
 
@@ -118,6 +120,7 @@ pcor.test(na.omit(globalCBF), na.omit(mod_df$Q),covs)
 
 QA_df<- merge(mod_df,QA_df,by=c("scanid"))
 QA_df<- merge(globalCBF,QA_df,by=c("scanid"))
+
 modularityByAge<- gam(Q ~ s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
 visreg(modularityByAge,"ageAtScan1", xlab="Age (months)", ylab="Modularity")
 
@@ -129,6 +132,14 @@ visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
 
 globalModularityCbf_noAge<- gam(globalCBF ~ Q + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
 visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+
+scatterplot3d(QA_df$sex,mod_df$Q,QA_df$globalCBF,xlab="Sex (1=Male; 2=Female)",ylab="Glasser Data-driven Modularity (Q)",zlab="global mean CBF (ml/100g/min)",main="Metabolic cost of Q by sex",pch=19,color="blue")
+
+vis.gam(globalModularityCbf,view=c("sex","Q"),type="response",theta=115,phi=0)
+title("Sex differences in metabolic cost of modularity (data-driven Glasser)")
+
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=10,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (data-driven Glasser)")
 
 ##########
 #Schaefer#
