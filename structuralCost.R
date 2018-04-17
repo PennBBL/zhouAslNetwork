@@ -68,13 +68,6 @@ library(visreg)
 library(akima)
 library(scatterplot3d)
 
-## To do: control for GM density for CBF? Subset by euclidian distance bins?
-## Perfusion-weighted structural networks?
-
-# Calculate regional mean CBF
-
-
-
 #########
 #Glasser#
 #########
@@ -106,11 +99,23 @@ cost_df<-merge(cost_df,mod_df,by=c("scanid"))[names(cost_df)]
 QA_df <- merge(QA_df,cost_df,by=c("scanid"))
 
 # Load in Glasser index
-glasser_index <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeIndex.1D')
+glasser_index_in_yeo <- read.csv('/data/jux/BBL/projects/ASLnetwork/results/glasserInYeo.txt',header=F)
 glasser_names <- read.csv('/home/rciric/xcpAccelerator/xcpEngine/atlas/glasser360/glasser360NodeNames.txt')
 
+# Negative CBF values
+negatives <- cost_df<0
+negatives_sum<- as.data.frame(apply(negatives,1,sum,na.rm=TRUE))
+cost_df[negatives] <- NA
+
 # Calculate subject global mean CBF, removing NAs
-globalCBF <- cbind(cost_df$scanid, rowMeans(cost_df, na.rm=T))
+globalCBF <- cbind(cost_df$scanid, rowMeans(cost_df[2:361], na.rm=T))
+
+# Calculate subject sum CBF
+#globalCBF <- cbind(cost_df$scanid, rowSums(cost_df[2:361], na.rm=T))
+
+# Calculate subject global standard deviation in CBF
+#globalCBF <- cbind(cost_df$scanid, transform(cost_df[2:361], SD=apply(cost_df[2:361],1,sd,na.rm=TRUE)))
+#globalCBF <- cbind(cost_df$scanid, globalCBF[362])
 
 colnames(globalCBF) <- c("scanid","globalCBF")
 cor.test(globalCBF[,2],mod_df$Q,method = "spearman",na.rm=T)
@@ -119,8 +124,8 @@ QA_df$Q <- (mod_df$Q- mean(mod_df$Q))/sd(mod_df$Q)
 QA_df$globalCBF <- globalCBF[,2]
 
 # Residualized Q linearly regressing out age
-lm1 <- lm(QA_df$Q ~ QA_df$ageAtScan1)
-QA_df$Q_resid <- residuals(lm1)
+#lm1 <- lm(QA_df$Q ~ QA_df$ageAtScan1)
+#QA_df$Q_resid <- residuals(lm1)
 
 modularityByAge<- gam(Q ~ s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
 visreg(modularityByAge,"ageAtScan1", xlab="Age (months)", ylab="Modularity")
@@ -128,19 +133,101 @@ visreg(modularityByAge,"ageAtScan1", xlab="Age (months)", ylab="Modularity")
 cbfByAge<- gam(globalCBF ~ s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
 visreg(cbfByAge,"ageAtScan1", xlab="Age (months)", ylab="Global CBF")
                   
-globalModularityCbf<- gam(globalCBF ~ Q_resid + s(ageAtScan1,k=4) + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
-visreg(globalModularityCbf,"Q_resid", xlab="Modularity", ylab="Global CBF")
-
-globalModularityCbf_noAge<- gam(globalCBF ~ Q + dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,data=QA_df)
-visreg(globalModularityCbf_noAge,"Q", xlab="Modularity", ylab="Global CBF")
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4)+ s(ageAtScan1,by=sex,k=4) + sex + pcaslRelMeanRMSMotion +dti64MeanRelRMS,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
 
 scatterplot3d(QA_df$sex,mod_df$Q,QA_df$globalCBF,xlab="Sex (1=Male; 2=Female)",ylab="Glasser Data-driven Modularity (Q)",zlab="global mean CBF (ml/100g/min)",main="Metabolic cost of Q by sex",pch=19,color="blue")
 
-vis.gam(globalModularityCbf,view=c("sex","Q_resid"),type="response",theta=135,phi=0)
+vis.gam(globalModularityCbf,view=c("sex","Q"),type="response",theta=135,phi=0)
 title("Sex differences in metabolic cost of modularity (data-driven Glasser)")
 
-vis.gam(globalModularityCbf,view=c("ageAtScan1","Q_resid"),type="response",theta=150,phi=0)
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
 title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (data-driven Glasser)")
+
+# Module level
+#Visual
+visual_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==1)
+visual_CBF<- as.data.frame(visual_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(visual_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo visual network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#Somatomotor
+SM_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==2)
+SM_CBF<- as.data.frame(SM_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(SM_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo SM network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#Dorsal attention
+dAtt_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==3)
+dAtt_CBF<- as.data.frame(dAtt_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(dAtt_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo DA network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#salience/Ventral attention
+salience_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==4)
+salience_CBF<- as.data.frame(salience_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(salience_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo salience network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#limbic
+limbic_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==5)
+limbic_CBF<- as.data.frame(limbic_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(limbic_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo limbic network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#FPC
+FPC_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==6)
+FPC_CBF<- as.data.frame(FPC_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(FPC_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo FPC network using Glasser nodes)")
+summary(globalModularityCbf)
+
+#DMN
+DMN_CBF <- cost_df[2:361]
+mindex<- t(glasser_index_in_yeo==7)
+DMN_CBF<- as.data.frame(DMN_CBF[,mindex])
+globalCBF <- cbind(cost_df$scanid, rowMeans(DMN_CBF, na.rm=T))
+QA_df$globalCBF <- globalCBF[,2]
+globalModularityCbf<- gam(globalCBF ~ Q + s(ageAtScan1,k=4) + s(ageAtScan1,by=sex,k=4)+ dti64MeanRelRMS + sex + pcaslRelMeanRMSMotion,fx=TRUE,method="REML",data=QA_df)
+visreg(globalModularityCbf,"Q", xlab="Modularity", ylab="Global CBF")
+vis.gam(globalModularityCbf,view=c("ageAtScan1","Q"),type="response",theta=150,phi=0)
+title("Renegotiation over ages 8 to 23 for \n metabolic cost of modularity by age (Yeo DMN network using Glasser nodes)")
+summary(globalModularityCbf)
 
 ##########
 #Schaefer#
